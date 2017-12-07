@@ -121,6 +121,7 @@ function on_panet_render(arg)
  	}
 }
 
+
 var forest = ['B', 'A'];
 var water = ['C', 'D', 'E', 'F'];
 // var sand = ['8', '7', '6', '5'];
