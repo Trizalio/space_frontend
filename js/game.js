@@ -2,10 +2,10 @@
 var player;
 var cursors;
 
-let planet_size = 50;
+let planet_size = 60;
 var planet_description = init_planet(planet_size);
 let pixel_size = 6;
-let frame = 3;
+let frame = 1;
 var game = new Phaser.Game(planet_size * pixel_size * frame, planet_size * pixel_size * frame, Phaser.CANVAS, 'phaser-example', { create: create, update: update });
 
 function on_panet_render(arg)

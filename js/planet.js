@@ -94,6 +94,7 @@ function pair_to_text(a, b)
 	return sa + sb;
 }
 
+letters = ['1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'];
 
 function init_planet(size)
 {
@@ -149,7 +150,12 @@ function init_planet(size)
 		
 		// cell[0] = pair_to_text(a, b);
 		// cell[0] = Math.random() * 8 + 1;
-		cell[0] = Math.abs(Math.round(b * 5));
+		cell[0] = letters[Math.abs(Math.round(b * (letters.length / Math.PI * 2 - 1)))];
+		if (Math.abs(a) % 0.3 > 0.25)
+		{
+			cell[0] = '1';
+		}
+		// console.log(a, b, cell[0]);
 	})
 	// print_matrix(planet.surface_matrix);
 	return planet;
@@ -201,11 +207,21 @@ function render_planet(planet)
     	let z = planet.radius * Math.cos(absolute_b);
     	let x = z * Math.sin(absolute_a);
     	z = z * Math.cos(absolute_a)
-    	// let tz = z * Math.cos(planet.beta) + y * Math.sin(planet.beta);
+    	let tz = -z * Math.cos(planet.beta) + y * Math.sin(planet.beta);
+    	// let abs_b = b + planet.beta;
+    	// abs_b = normalize(abs_b);
     	y = z * Math.sin(planet.beta) + y * Math.cos(planet.beta);
-    	if (z < 0)
-    	{
+    	// z = z * Math.sin(planet.beta) + y * Math.cos(planet.beta);
+
+    	// if (abs_b > Math.PI / 2 || abs_b < -Math.PI / 2)
+    	// {
+			// cell[0] = empty_description;
+			// console.log('return forEachCell');
     		// return;
+    	// }
+    	if (tz < 0)
+    	{
+    		return;
     	}
     	/// let y = absolute_b * vertical_radius / Math.PI * Math.abs(Math.sin(absolute_b));
 		// let current_horisontal_radius = Math.sqrt(planet.radius * planet.radius - y * y);
@@ -227,12 +243,12 @@ function render_planet(planet)
     		if (arr.length)
     		{
 				for( let k = 0; k < arr.length; k++ ){
-				    sum += arr[k];
+				    sum += parseInt(arr[k], 16);
 				}
 
 				let  avg = sum / arr.length;
 				// avg = arr.length;
-	    		planet.visual_matrix[i][j] = '' + Math.round(avg);
+	    		planet.visual_matrix[i][j] = letters[Math.round(avg)];
 	    	}
 	    	else
 	    	{
