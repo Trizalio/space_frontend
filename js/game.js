@@ -1,10 +1,28 @@
-var game = new Phaser.Game(400, 400, Phaser.CANVAS, 'phaser-example', { create: create, update: update });
 
 var player;
 var cursors;
 
 let planet_size = 50;
 var planet_description = init_planet(planet_size);
+let pixel_size = 6;
+let frame = 3;
+var game = new Phaser.Game(planet_size * pixel_size * frame, planet_size * pixel_size * frame, Phaser.CANVAS, 'phaser-example', { create: create, update: update });
+
+function on_panet_render(arg)
+{
+	if ( !player)
+	{
+ 		player = game.add.sprite(0, 0, 'planet');
+    	game.physics.arcade.enable(player);
+ 	}
+ 	else
+ 	{
+    	player.loadTexture(arg);
+    	counter = 0;
+
+ 	}
+}
+
 
 function create() {
 
@@ -23,7 +41,7 @@ var counter = 0;
 
 function update() {
 	// console.log(counter);
-	if (counter == 2)
+	if (counter == 5)
 	{
 		let skip = false;
 		// console.log('init deformation')

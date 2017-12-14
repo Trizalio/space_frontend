@@ -1,20 +1,5 @@
 
 
-function on_panet_render(arg)
-{
-	if ( !player)
-	{
- 		player = game.add.sprite(0, 0, 'planet');
-    	game.physics.arcade.enable(player);
- 	}
- 	else
- 	{
-    	player.loadTexture(arg);
-    	counter = 0;
-
- 	}
-}
-
 
 var forest = ['B', 'A'];
 var water = ['C', 'D', 'E', 'F'];
@@ -26,6 +11,7 @@ var snow = '2';
 let start_height = 2;
 var empty_description = [false, start_height, false, 0.1, 0];
 
+// var empty_description = ['\\../'];
 var empty_description = ['.'];
 var empty_visual = '.';
 
@@ -53,21 +39,10 @@ function init_matrix(size_x, size_y, value)
 		matrix.push(row);
 	}
 	console.log('init_matrix');
-	print_matrix(matrix);
+	// print_matrix(matrix);
 	return matrix
 }
 
-
-// function in_planet(planet, x, y)
-// {
-// 	let size = planet.length;
-// 	// console.log(size, x, y);
-// 	if (x >= size || y >= size || x < 0 || y < 0)
-// 	{
-// 		return false;
-// 	}
-// 	return planet[x][y][0];
-// }
 
 
 function in_planet(planet, dx, dy)
@@ -75,6 +50,7 @@ function in_planet(planet, dx, dy)
 	// console.log('in_planet', planet.radius, x, y);
 	// let horisontal_radius = planet.radius * Math.PI;
 	dx /= Math.PI;
+	dy /= Math.PI / 2;
 	let dr = dx * dx  + dy * dy;
 	let res = dr < planet.radius * planet.radius;
 	// console.log('dx', dx, 'dy', dy, 'dr', dr, 'res', res);
@@ -101,18 +77,37 @@ function random(from, to) {
 	return from + Math.random() * delta;
 }
 
+function pair_to_text(a, b)
+{
+	let ra = Math.round(a);
+	let sa = '+' + ra;
+	if (ra < 0)
+	{
+		sa = '' + ra;
+	}
+	let rb = Math.round(b);
+	let sb = '+' + rb;
+	if (rb < 0)
+	{
+		sb = '' + rb;
+	}
+	return sa + sb;
+}
+
 
 function init_planet(size)
 {
-	console.log('init_planet', size, size * Math.PI);
-	let logic_matrix = init_matrix(size * Math.PI, size, empty_description);
-	let visual_matrix = init_matrix(size+1, size, empty_visual);
+	let logic_matrix_width = Math.ceil(size * Math.PI);
+	let logic_matrix_height = Math.ceil(size * Math.PI / 2);
+	console.log('init_planet', logic_matrix_width, logic_matrix_height);
+	let logic_matrix = init_matrix(logic_matrix_width, logic_matrix_height, empty_description);
+	let visual_matrix = init_matrix(size + 2, size + 2, empty_visual);
 	planet = {
 		visual_matrix:visual_matrix, 
 		surface_matrix:logic_matrix, 
 		diameter:size, 
 		radius:size/2., 
-		area:size * Math.PI / 4, 
+		area:size * Math.PI, 
 		workers:[],
 		alpha:0,
 		beta:0,
@@ -121,36 +116,24 @@ function init_planet(size)
 		render:function(){return render_planet(planet);},
 		forEachCell:function(callback){
 			let horisontal_radius = planet.radius * Math.PI;
+			let vertical_radius = planet.radius * Math.PI / 2;
 			let i = planet.surface_matrix.length;
 			let max_steps = 100;
 			let step = 0;
 			while(i--)
 			{
-				// console.log('i', i, 'step', step);
-
-				// step++;
-				// if (step > max_steps)
-				// {
-				// 	break;
-				// }
 				
 				let j = planet.surface_matrix[i].length;
 				while(j--)
 				{
-					// console.log('i', i, 'j', j, 'step', step);
-					// step++;
-					// if (step > max_steps)
-					// {
-					// 	break;
-					// }
     		// planet.surface_matrix.forEach(function (row, i) {
     			// row.forEach(function (cell, j) {
     				let x = j + 0.5 - horisontal_radius;
-    				let y = i + 0.5 - planet.radius;
+    				let y = i + 0.5 - vertical_radius;
     				if (in_planet(planet, x, y))
     				{
-    					let current_horisontal_radius = Math.sqrt(planet.radius * planet.radius - y * y) * Math.PI;
-	    				let b = y * Math.PI / planet.radius;
+    					let current_horisontal_radius = Math.sqrt(vertical_radius * vertical_radius - y * y) * 2;
+	    				let b = y / (planet.radius);
 	    				let a = x / current_horisontal_radius * Math.PI;
 	    				// console.log(horisontal_radius,'x',planet.radius,' ',current_horisontal_radius, ' ', x,y,'->',a,b)
 	    				callback(a, b, planet.surface_matrix[i][j]);
@@ -163,17 +146,10 @@ function init_planet(size)
 	planet.forEachCell(function (a, b, cell)
 	{
 		// console.log('forEachCell', a, b, cell);
-		// let sa = '+' + Math.round(a);
-		// if (a < 0)
-		// {
-		// 	sa = '' + Math.round(a);
-		// }
-		// let sb = '+' + Math.round(b);
-		// if (b < 0)
-		// {
-		// 	sb= '' + Math.round(b);
-		// }
-		cell[0] = Math.random() * 8 + 1;
+		
+		// cell[0] = pair_to_text(a, b);
+		// cell[0] = Math.random() * 8 + 1;
+		cell[0] = Math.abs(Math.round(b * 5));
 	})
 	// print_matrix(planet.surface_matrix);
 	return planet;
@@ -205,30 +181,44 @@ function render_planet(planet)
 
 	console.log('render_planet', planet.alpha);
 	let horisontal_radius = planet.radius * Math.PI;
+	let vertical_radius = planet.radius * Math.PI / 2.;
 
     planet.forEachCell(function (a, b, cell) {
 		// console.log('render_planet forEachCell', a, b);
     	let absolute_a = a + planet.alpha;
-    	let absolute_b = b + planet.beta;
+    	let absolute_b = b;// + planet.beta;
 		// console.log('render_planet forEachCell', absolute_a, absolute_b);
     	absolute_a = normalize(absolute_a);
     	absolute_b = normalize(absolute_b);
     	if (absolute_a > Math.PI / 2 || absolute_a < -Math.PI / 2)
     	{
+			// cell[0] = empty_description;
 			// console.log('return forEachCell');
-    		return;
+    		// return;
     	}
 		// console.log('render_planet forEachCell, absolute_a, absolute_b', absolute_a, absolute_b);
-    	let y = absolute_b * planet.radius / Math.PI;
-		let current_horisontal_radius = Math.sqrt(planet.radius * planet.radius - y * y);
-    	let x = current_horisontal_radius * Math.sin(absolute_a);
+    	let y = planet.radius * Math.sin(absolute_b);
+    	let z = planet.radius * Math.cos(absolute_b);
+    	let x = z * Math.sin(absolute_a);
+    	z = z * Math.cos(absolute_a)
+    	// let tz = z * Math.cos(planet.beta) + y * Math.sin(planet.beta);
+    	y = z * Math.sin(planet.beta) + y * Math.cos(planet.beta);
+    	if (z < 0)
+    	{
+    		// return;
+    	}
+    	/// let y = absolute_b * vertical_radius / Math.PI * Math.abs(Math.sin(absolute_b));
+		// let current_horisontal_radius = Math.sqrt(planet.radius * planet.radius - y * y);
+    	// let x = current_horisontal_radius * Math.sin(absolute_a);
 		// console.log('render_planet forEachCell, x, y, planet.radius', x, y, planet.radius);
-    	let j = Math.round(x - 0.5 + planet.radius);
-    	let i = Math.round(y - 0.5 + planet.radius);
+    	let i = Math.round(x + planet.radius);
+    	let j = Math.round(y + planet.radius);
 		// console.log('render_planet forEachCell, i, j', i, j);
-		// console.log('render_planet forEachCell', a, b, cell, '->', i, j);
-		planet.visual_matrix[i][j].push( cell[0] );
+		// console.log('render_planet forEachCell', a, b,'->', i, j);
+		planet.visual_matrix[j][i].push( cell[0] );
+		// cell[0] = pair_to_text(i, j);
     });
+    console.log('i`m fine');
 
     planet.visual_matrix.forEach(function (row, i) {
     	row.forEach(function (cell, j) {
@@ -251,7 +241,8 @@ function render_planet(planet)
     	})
     })
 
-
+    // planet.visual_matrix[10][4] = "!";
+	// print_matrix(planet.surface_matrix);
 	// print_matrix(planet.visual_matrix);
     return planet.visual_matrix;
 
