@@ -2,17 +2,19 @@
 var player;
 var cursors;
 
-let planet_size = 60;
+let planet_size = 8;
 var planet_description = init_planet(planet_size);
 let pixel_size = 6;
 let frame = 1;
-var game = new Phaser.Game(planet_size * pixel_size * frame, planet_size * pixel_size * frame, Phaser.CANVAS, 'phaser-example', { create: create, update: update });
+let canvas_size = planet_size * pixel_size * frame;
+var game = new Phaser.Game(canvas_size, canvas_size, Phaser.CANVAS, 'phaser-example', { create: create, update: update });
 
 function on_panet_render(arg)
 {
 	if ( !player)
 	{
- 		player = game.add.sprite(0, 0, 'planet');
+ 		player = game.add.sprite(canvas_size / 2, canvas_size/2, 'planet');
+		player.anchor.set(0.5);
     	game.physics.arcade.enable(player);
  	}
  	else
@@ -21,6 +23,14 @@ function on_panet_render(arg)
     	counter = 0;
 
  	}
+}
+
+function mouseWheel(event) {
+  if(game.input.mouse.wheelDelta === Phaser.Mouse.WHEEL_UP) {
+	planet_description.enchanceScale(1.01);
+  } else {
+	planet_description.enchanceScale(0.99);
+  }
 }
 
 
@@ -35,9 +45,13 @@ function create() {
 	game.create.texture('planet', planet_data, 6, 6, 0, true, on_panet_render);
 
     cursors = game.input.keyboard.createCursorKeys();
+
+  	game.input.mouse.mouseWheelCallback = mouseWheel;
 }
 
 var counter = 0;
+
+
 
 function update() {
 	// console.log(counter);
@@ -75,7 +89,7 @@ function update() {
 		}
 		// skip = true;
 
-		if (skip == false)
+		if (skip == false && planet_description.render_required)
 		{
 		    var planet_data = render_planet(planet_description);
 			game.create.texture('planet1', planet_data, 6, 6, 0, true, on_panet_render);
@@ -89,22 +103,24 @@ function update() {
 
     if (cursors.right.isDown)
     {
-		planet_description.alpha += 0.01;
+		planet_description.rotateAlpha(0.01);
 	}
 
     else if (cursors.left.isDown)
     {
-		planet_description.alpha -= 0.01;
+		planet_description.rotateAlpha(-0.01);
 	}
 
     else if (cursors.up.isDown)
     {
-		planet_description.beta += 0.01;
+		planet_description.rotateBeta(0.01);
 	}
 
     else if (cursors.down.isDown)
     {
-		planet_description.beta -= 0.01;
+		planet_description.rotateBeta(-0.01);
+		// planet_description.enchanceScale(0.99);
+		
 	}
 
 	// if ( player)

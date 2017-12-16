@@ -1,6 +1,7 @@
 
 
 
+
 var forest = ['B', 'A'];
 var water = ['C', 'D', 'E', 'F'];
 
@@ -12,7 +13,7 @@ let start_height = 2;
 var empty_description = [false, start_height, false, 0.1, 0];
 
 // var empty_description = ['\\../'];
-var empty_description = ['.'];
+var empty_description = {'color':'.'};
 var empty_visual = '.';
 
 function print_matrix(matrix)
@@ -25,6 +26,33 @@ function print_matrix(matrix)
 	console.log (res);
 }
 
+function print_matrix2(matrix, field_name, wrapper)
+{
+	// console.log (matrix);
+	var res = '   ';
+	let first = true;
+    matrix.forEach(function (row, i) {
+    	line = ('' + i % 10)[0] + '  ';
+    	row.forEach(function (cell, j) {
+    		if (first)
+    		{
+    			res += ('' + j % 10) + ' ';
+    		}
+    		let value = cell[field_name];
+    		line += wrapper(value) + ' ';
+    	});
+		if (first)
+		{
+			res +=  '\n';
+		}
+    	res +=  '\n' + line;
+
+		first = false;
+    });
+	console.log (res);
+}
+
+
 function init_matrix(size_x, size_y, value)
 {
 	console.log('init_matrix', size_x, size_y, value);
@@ -34,7 +62,7 @@ function init_matrix(size_x, size_y, value)
 		let row = [];
 		for(let j = 0; j < size_x; ++j)
 		{
-			row.push(value.slice());
+			row.push(Object.assign({}, value));
 		}
 		matrix.push(row);
 	}
@@ -94,7 +122,11 @@ function pair_to_text(a, b)
 	return sa + sb;
 }
 
-letters = ['1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'];
+let letters = ['1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'];
+let line_width = 0.03;
+let lines_on_planet = 12;
+let line_step = Math.PI * 2 / lines_on_planet;
+let lines_start = line_step - line_width;
 
 function init_planet(size)
 {
@@ -102,6 +134,9 @@ function init_planet(size)
 	let logic_matrix_height = Math.ceil(size * Math.PI / 2);
 	console.log('init_planet', logic_matrix_width, logic_matrix_height);
 	let logic_matrix = init_matrix(logic_matrix_width, logic_matrix_height, empty_description);
+
+
+
 	let visual_matrix = init_matrix(size + 2, size + 2, empty_visual);
 	planet = {
 		visual_matrix:visual_matrix, 
@@ -110,54 +145,242 @@ function init_planet(size)
 		radius:size/2., 
 		area:size * Math.PI, 
 		workers:[],
-		alpha:0,
-		beta:0,
-		// in_planet:function(x,y){return in_planet(planet,x,y);},
-		randomPlanetPosition:function(){return randomPlanetPosition(size);},
-		render:function(){return render_planet(planet);},
-		forEachCell:function(callback){
-			let horisontal_radius = planet.radius * Math.PI;
-			let vertical_radius = planet.radius * Math.PI / 2;
-			let i = planet.surface_matrix.length;
-			let max_steps = 100;
-			let step = 0;
-			while(i--)
-			{
-				
-				let j = planet.surface_matrix[i].length;
-				while(j--)
-				{
-    		// planet.surface_matrix.forEach(function (row, i) {
-    			// row.forEach(function (cell, j) {
-    				let x = j + 0.5 - horisontal_radius;
-    				let y = i + 0.5 - vertical_radius;
-    				if (in_planet(planet, x, y))
-    				{
-    					let current_horisontal_radius = Math.sqrt(vertical_radius * vertical_radius - y * y) * 2;
-	    				let b = y / (planet.radius);
-	    				let a = x / current_horisontal_radius * Math.PI;
-	    				// console.log(horisontal_radius,'x',planet.radius,' ',current_horisontal_radius, ' ', x,y,'->',a,b)
-	    				callback(a, b, planet.surface_matrix[i][j]);
-    				}
-    				// break;
-				}
-    		}
-		},
+		alpha:-0.17,
+		beta:-0.53,
+		scale:0.8,
+		render_required:true
 	};
+
+	// let horisontal_radius = planet.radius * Math.PI;
+	// let vertical_radius = planet.radius * Math.PI / 2;
+
+
+	let horisontal_radius = logic_matrix_width / 2;
+	let vertical_radius = logic_matrix_height / 2;
+
+	planet.rotateAlpha = function(delta_angle){
+		planet.alpha += delta_angle; planet.render_required = true;
+	};
+	planet.rotateBeta = function(delta_angle){
+		planet.beta += delta_angle; planet.render_required = true;
+	};
+	planet.enchanceScale = function(delta_scale){
+		planet.scale *= delta_scale; 
+		if(planet.scale > 1){
+			planet.scale = 1;
+		}
+		planet.render_required = true;
+	};
+	planet.randomPlanetPosition = function(){
+		return randomPlanetPosition(size);
+	};
+	planet.render = function(){
+		return render_planet(planet);
+	};
+	planet.forEachCell = function(callback){
+		// let horisontal_radius = planet.radius * Math.PI;
+		// let vertical_radius = planet.radius * Math.PI / 2;
+		// let i = planet.surface_matrix.length;
+		// let max_steps = 100;
+		// let step = 0;
+
+
+	    planet.surface_matrix.forEach(function (row, i) {
+	    	row.forEach(function (cell, j) {
+	    		if ('a' in cell)
+	    		{
+	    			callback(cell['a'], cell['b'], planet.surface_matrix[i][j]);
+	    		}
+		// while(i--)
+		// {
+			
+			// let j = planet.surface_matrix[i].length;
+			// while(j--)
+			// {
+		// planet.surface_matrix.forEach(function (row, i) {
+			// row.forEach(function (cell, j) {
+				// let x = j + 0.5 - horisontal_radius;
+				// let y = i + 0.5 - vertical_radius;
+				// if (in_planet(planet, x, y))
+				// {
+				// 	let current_horisontal_radius = Math.sqrt(vertical_radius * vertical_radius - y * y) * 2;
+    // 				let b = y / (planet.radius);
+    // 				let a = x / current_horisontal_radius * Math.PI;
+    // 				// console.log(horisontal_radius,'x',planet.radius,' ',current_horisontal_radius, ' ', x,y,'->',a,b)
+    // 				callback(a, b, planet.surface_matrix[i][j]);
+				// }
+				// break;
+			});
+		});
+		
+	};
+
+    planet.surface_matrix.forEach(function (row, i) {
+    	row.forEach(function (cell, j) {
+    		// cell['neighbours'] 
+			let x = j + 0.5 - horisontal_radius;
+			let y = i + 0.5 - vertical_radius;
+			if (in_planet(planet, x, y))
+			{
+				let current_horisontal_radius = Math.sqrt(vertical_radius * vertical_radius - y * y) * 2;
+				let b = y / (planet.radius);
+				let a = x / current_horisontal_radius * Math.PI;
+				cell['a'] = a;
+				cell['b'] = b;
+				cell['tx'] = x;
+				cell['ty'] = y;
+
+			}
+	
+		});
+	});
+    planet.surface_matrix.forEach(function (row, i) {
+    	row.forEach(function (cell, j) {
+    		if ('a' in cell)
+    		{
+				cell['neighbours'] = [];
+    		}
+    	});
+    });
+    function pad(num, size){ return ('000000000' + num).substr(-size); };
+	print_matrix2(planet.surface_matrix, 'a', function(val){return ('' + Math.abs(val * 0 + 1))[0]});
+	// print_matrix2(planet.surface_matrix, 'tx', function(val){return pad(('' + Math.round(Math.abs(val) * 100) % 1000),3)});
+	// print_matrix2(planet.surface_matrix, 'ty', function(val){return ('' + Math.abs(val) % 10)});
+	print_matrix2(planet.surface_matrix, 'a', function(val){return ('' + Math.abs(val * 3))[0]});
+	print_matrix2(planet.surface_matrix, 'b', function(val){return ('' + Math.abs(val * 6))[0]});
+
+    wrapping = {};
+    planet.surface_matrix.forEach(function (row, i) {
+    	let min_j = row.length;
+    	let max_j = -1;
+    	row.forEach(function (cell, j) {
+    		if ('a' in cell)
+    		{
+    			if (j < min_j)
+    			{
+    				min_j = j;
+    			}
+
+    			if (j > max_j)
+    			{
+    				max_j = j;
+    			}
+    		}
+    	});
+    	wrapping[i] = {min:min_j, max:max_j};
+    });
+	console.log('wrapping', wrapping);
+
+    wrap = function(i, j)
+    {
+    	if (j in wrapping)
+    	{
+    		limits = wrapping[j];
+    		ri = i;
+    		if (i < limits.min)
+    		{
+    			ri = limits.max;
+    		}
+    		else if (i > limits.max)
+    		{
+    			ri = limits.min;
+    		}
+
+    		if (ri != i)
+    		{
+    			console.log('wrap', i,j,'->', ri, j);
+    		}
+    		return ri;
+    	}
+    	else
+    	{
+    		return null;
+    	}
+    }
+
+ //    neighbours_order = [[1,1], [1,0], [1,-1], [0,1]];
+ //    planet.surface_matrix.forEach(function (row, i) {
+ //    	row.forEach(function (cell, j) {
+ //    		if ('a' in cell)
+ //    		{
+ //    			console.log('start neighbours', i, j);
+ //    			let a = cell['a'];
+ //    			let b = cell['b'];
+ //    			for(let k = 0; k < neighbours_order.length; ++k)
+ //    			{
+ //    				let ti = i + neighbours_order[k][0];
+ //    				let tj = j + neighbours_order[k][1];
+ //    				// if (ti > 0 && tj > 0 && ti < size && tj < size)
+ //    				// {
+ //    					ti = wrap(ti, tj);
+ //    					if (!(ti === null))
+ //    					{
+    					
+	//     					let target = planet.surface_matrix[ti][tj];
+	//     					da = target['a'] - a;
+	//     					db = target['b'] - b;
+	//     					angle = Math.atan2(db, da);
+	//     					range = Math.sqrt(da*da + db*db);
+	//     					cell['neighbours'].push({'angle':angle, 'range':range, 'cell':target});
+	//     					target['neighbours'].push({'angle':normalize(angle + Math.PI), 'range':range, 'cell':cell});
+	//     					console.log('push neighbour', angle, range, cell['neighbours'].length, target['neighbours'].length);
+ //    					}
+ //    				// }
+ //    			}
+
+ //    		}
+	// 		console.log('---');
+	
+	// 	});
+	// });
+
+ //    planet.surface_matrix.forEach(function (row, i) {
+ //    	row.forEach(function (cell, j) {
+ //    		if ('a' in cell)
+ //    		{
+ //    			let a = cell['a'];
+ //    			let b = cell['b'];
+ //    			for(let k = 0; k < neighbours_order.length; ++k)
+ //    			{
+ //    				let ti = i + neighbours_order[k][0];
+ //    				let tj = j + neighbours_order[k][1];
+ //    				if (ti > 0 && tj > 0 && ti < size && tj < size)
+ //    				{
+ //    					let target = planet.surface_matrix[ti][tj];
+	//     				if ('a' in target)
+	//     				{
+	//     					da = target['a'] - a;
+	//     					db = target['b'] - b;
+	//     					angle = Math.atan2(db, da);
+	//     					range = Math.sqrt(da*da + db*db);
+	//     					cell['neighbours'].push({'angle':angle, 'range':range, 'cell':target});
+	//     					target['neighbours'].push({'angle':normalize(angle + Math.PI), 'range':range, 'cell':cell});
+	//     					console.log('push neighbour', angle, range, cell['neighbours'].length, target['neighbours'].length);
+	//     				}
+ //    				}
+ //    			}
+
+ //    		}
+	// 		console.log('---');
+	
+	// 	});
+	// });
+
 	planet.forEachCell(function (a, b, cell)
 	{
 		// console.log('forEachCell', a, b, cell);
 		
 		// cell[0] = pair_to_text(a, b);
 		// cell[0] = Math.random() * 8 + 1;
-		cell[0] = letters[Math.abs(Math.round(b * (letters.length / Math.PI * 2 - 1)))];
-		if (Math.abs(a) % 0.3 > 0.25)
+		cell['color'] = letters[Math.abs(Math.round(b * (letters.length / Math.PI * 2 - 1)))];
+
+		a = a + Math.PI;
+		if (a % line_step > lines_start)
 		{
-			cell[0] = '1';
+			cell['color'] = '1';
 		}
 		// console.log(a, b, cell[0]);
 	})
-	// print_matrix(planet.surface_matrix);
 	return planet;
 }
 
@@ -184,57 +407,38 @@ function render_planet(planet)
     	})
     })
 
-
-	console.log('render_planet', planet.alpha);
-	let horisontal_radius = planet.radius * Math.PI;
-	let vertical_radius = planet.radius * Math.PI / 2.;
+	console.log('render_planet', planet.alpha, planet.beta, planet.scale);
+	let radius = planet.scale * planet.radius;
 
     planet.forEachCell(function (a, b, cell) {
-		// console.log('render_planet forEachCell', a, b);
     	let absolute_a = a + planet.alpha;
-    	let absolute_b = b;// + planet.beta;
-		// console.log('render_planet forEachCell', absolute_a, absolute_b);
     	absolute_a = normalize(absolute_a);
-    	absolute_b = normalize(absolute_b);
-    	if (absolute_a > Math.PI / 2 || absolute_a < -Math.PI / 2)
-    	{
-			// cell[0] = empty_description;
-			// console.log('return forEachCell');
-    		// return;
-    	}
-		// console.log('render_planet forEachCell, absolute_a, absolute_b', absolute_a, absolute_b);
-    	let y = planet.radius * Math.sin(absolute_b);
-    	let z = planet.radius * Math.cos(absolute_b);
+
+    	let y = radius * Math.sin(b);
+    	let z = radius * Math.cos(b);
+
     	let x = z * Math.sin(absolute_a);
     	z = z * Math.cos(absolute_a)
-    	let tz = -z * Math.cos(planet.beta) + y * Math.sin(planet.beta);
-    	// let abs_b = b + planet.beta;
-    	// abs_b = normalize(abs_b);
-    	y = z * Math.sin(planet.beta) + y * Math.cos(planet.beta);
-    	// z = z * Math.sin(planet.beta) + y * Math.cos(planet.beta);
 
-    	// if (abs_b > Math.PI / 2 || abs_b < -Math.PI / 2)
-    	// {
-			// cell[0] = empty_description;
-			// console.log('return forEachCell');
-    		// return;
-    	// }
+    	let sin_beta = Math.sin(planet.beta);
+    	let cos_beta = Math.cos(planet.beta);
+
+    	let tz = -z * cos_beta + y * sin_beta;
+    	
     	if (tz < 0)
     	{
     		return;
     	}
-    	/// let y = absolute_b * vertical_radius / Math.PI * Math.abs(Math.sin(absolute_b));
-		// let current_horisontal_radius = Math.sqrt(planet.radius * planet.radius - y * y);
-    	// let x = current_horisontal_radius * Math.sin(absolute_a);
-		// console.log('render_planet forEachCell, x, y, planet.radius', x, y, planet.radius);
+    	y = z * sin_beta + y * cos_beta;
+    	
     	let i = Math.round(x + planet.radius);
     	let j = Math.round(y + planet.radius);
-		// console.log('render_planet forEachCell, i, j', i, j);
-		// console.log('render_planet forEachCell', a, b,'->', i, j);
-		planet.visual_matrix[j][i].push( cell[0] );
-		// cell[0] = pair_to_text(i, j);
+		
+		// planet.visual_matrix[j][i].push( '' + cell['neighbours'].length);
+		// console.log(cell['neighbours'].length + '');
+		// return;
+		planet.visual_matrix[j][i].push( cell['color'] );
     });
-    console.log('i`m fine');
 
     planet.visual_matrix.forEach(function (row, i) {
     	row.forEach(function (cell, j) {
@@ -260,6 +464,7 @@ function render_planet(planet)
     // planet.visual_matrix[10][4] = "!";
 	// print_matrix(planet.surface_matrix);
 	// print_matrix(planet.visual_matrix);
+	planet.render_required = false;
     return planet.visual_matrix;
 
 }
