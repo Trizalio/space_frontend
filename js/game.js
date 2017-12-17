@@ -2,7 +2,7 @@
 var player;
 var cursors;
 
-let planet_size = 8;
+let planet_size = 50;
 var planet_description = init_planet(planet_size);
 let pixel_size = 6;
 let frame = 1;
@@ -42,7 +42,7 @@ function create() {
 
 
     var planet_data = render_planet(planet_description);
-	game.create.texture('planet', planet_data, 6, 6, 0, true, on_panet_render);
+	game.create.texture('planet', planet_data, pixel_size, pixel_size, 0, true, on_panet_render);
 
     cursors = game.input.keyboard.createCursorKeys();
 

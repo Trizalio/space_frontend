@@ -1,6 +1,114 @@
 
 
+let canvas_init_done = false;
+let ctx = null;
 
+let scale = 6;
+let safe_factor = 1;
+let canvas_width = null;
+let canvas_half_width = null;
+let canvas_height = null;
+let canvas_half_height = null;
+function init_canvas(width, height)
+{
+	console.log('init_canvas');
+	let canvas = document.createElement('canvas');
+	// console.log(canvas);
+	canvas_width = width * scale * safe_factor;
+	canvas_half_width = canvas_width / 2;
+
+	canvas_height = height * scale * safe_factor;
+	canvas_half_height = canvas_height / 2;
+
+	canvas.width = canvas_width
+	canvas.height = canvas_height;
+	// console.log(canvas);
+  	document.body.appendChild(canvas);
+	// console.log(document.body);
+	ctx = canvas.getContext("2d");
+	// console.log(ctx);
+	canvas_init_done = true;
+}
+let line_k = 5;
+function draw_line_between(x1,y1,x2,y2, c)
+{
+	// console.log('draw_line_between', x1,y1,x2,y2);
+	if (!canvas_init_done)
+	{
+		console.log('canvas is not inited');
+		return;
+		// init_canvas();
+	}
+	ctx.beginPath();
+	if (c)
+	{
+		ctx.strokeStyle="#FF0000";
+
+	}
+	else
+	{
+		let ax = (x1 + x2) / 2;
+		let ay = (y1 + y2) / 2;
+		x1 = (x1 * line_k + ax) / (line_k + 1);
+		x2 = (x2 * line_k + ax) / (line_k + 1);
+		y1 = (y1 * line_k + ay) / (line_k + 1);
+		y2 = (y2 * line_k + ay) / (line_k + 1);
+		ctx.strokeStyle="#000000";
+	}
+		
+	ctx.moveTo(x1*scale + canvas_half_width, y1*scale + canvas_half_height);
+	ctx.lineTo(x2*scale + canvas_half_width, y2*scale + canvas_half_height);
+
+	ctx.stroke();
+}
+
+function draw_line_between_ij(x1,y1,x2,y2, c)
+{
+	// console.log('draw_line_between', x1,y1,x2,y2);
+	if (!canvas_init_done)
+	{
+		console.log('canvas is not inited');
+		return;
+		// init_canvas();
+	}
+	ctx.beginPath();
+	if (c)
+	{
+		ctx.strokeStyle="#FF0000";
+		if (x1 > x2)
+		{
+			ctx.moveTo(x1*scale - canvas_width, y1*scale);
+			ctx.lineTo(x2*scale, y2*scale);
+
+			ctx.moveTo(x1*scale, y1*scale);
+			ctx.lineTo(x2*scale + canvas_width, y2*scale);
+		}
+		else
+		{
+			ctx.moveTo(x1*scale + canvas_width, y1*scale);
+			ctx.lineTo(x2*scale, y2*scale);
+
+			ctx.moveTo(x1*scale, y1*scale);
+			ctx.lineTo(x2*scale - canvas_width, y2*scale);	
+		}
+
+	}
+	else
+	{
+		let ax = (x1 + x2) / 2;
+		let ay = (y1 + y2) / 2;
+		x1 = (x1 * line_k + ax) / (line_k + 1);
+		x2 = (x2 * line_k + ax) / (line_k + 1);
+		y1 = (y1 * line_k + ay) / (line_k + 1);
+		y2 = (y2 * line_k + ay) / (line_k + 1);
+		ctx.strokeStyle="#000000";
+		ctx.moveTo(x1*scale, y1*scale);
+		ctx.lineTo(x2*scale, y2*scale);
+	}
+		
+
+	ctx.stroke();
+}
 
 var forest = ['B', 'A'];
 var water = ['C', 'D', 'E', 'F'];
@@ -132,6 +240,8 @@ function init_planet(size)
 {
 	let logic_matrix_width = Math.ceil(size * Math.PI);
 	let logic_matrix_height = Math.ceil(size * Math.PI / 2);
+	let radius = size/2;
+	init_canvas(logic_matrix_width, logic_matrix_height);
 	console.log('init_planet', logic_matrix_width, logic_matrix_height);
 	let logic_matrix = init_matrix(logic_matrix_width, logic_matrix_height, empty_description);
 
@@ -142,7 +252,7 @@ function init_planet(size)
 		visual_matrix:visual_matrix, 
 		surface_matrix:logic_matrix, 
 		diameter:size, 
-		radius:size/2., 
+		radius:radius., 
 		area:size * Math.PI, 
 		workers:[],
 		alpha:-0.17,
@@ -214,12 +324,16 @@ function init_planet(size)
 		});
 		
 	};
+    let j_from_x = function(x){return x - 0.5 + horisontal_radius;};
+    let i_from_y = function(y){return y - 0.5 + vertical_radius;};
+    let x_from_j = function(j){return j + 0.5 - horisontal_radius;};
+    let y_from_i = function(i){return i + 0.5 - vertical_radius;};
 
     planet.surface_matrix.forEach(function (row, i) {
     	row.forEach(function (cell, j) {
     		// cell['neighbours'] 
-			let x = j + 0.5 - horisontal_radius;
-			let y = i + 0.5 - vertical_radius;
+			let x = x_from_j(j);
+			let y = y_from_i(i);
 			if (in_planet(planet, x, y))
 			{
 				let current_horisontal_radius = Math.sqrt(vertical_radius * vertical_radius - y * y) * 2;
@@ -227,8 +341,8 @@ function init_planet(size)
 				let a = x / current_horisontal_radius * Math.PI;
 				cell['a'] = a;
 				cell['b'] = b;
-				cell['tx'] = x;
-				cell['ty'] = y;
+				cell['x'] = x;
+				cell['y'] = y;
 
 			}
 	
@@ -271,33 +385,179 @@ function init_planet(size)
     });
 	console.log('wrapping', wrapping);
 
-    wrap = function(i, j)
+ //    wrapping = {};
+ //    planet.surface_matrix.forEach(function (row, i) {
+ //    	let min_x = row.length;
+ //    	let max_x = -row.length;
+ //    	let y = null;
+ //    	row.forEach(function (cell, j) {
+ //    		if ('x' in cell)
+ //    		{
+ //    			let x = cell['x'];
+ //    			y = cell['y'];
+ //    			if (x < min_x)
+ //    			{
+ //    				min_x = x;
+ //    			}
+
+ //    			if (x > max_x)
+ //    			{
+ //    				max_x = x;
+ //    			}
+ //    		}
+ //    	});
+ //    	wrapping[y] = {min:min_x, max:max_x};
+ //    });
+	// console.log('wrapping', wrapping);
+
+    wrap = function(x, y)
     {
-    	if (j in wrapping)
+    	if (y in wrapping)
     	{
-    		limits = wrapping[j];
-    		ri = i;
-    		if (i < limits.min)
+    		limits = wrapping[y];
+    		rx = x;
+    		if (x < limits.min)
     		{
-    			ri = limits.max;
+    			if (x < limits.min - 1)
+    			{
+    				return null;
+    			}
+    			rx = limits.max;
     		}
-    		else if (i > limits.max)
+    		else if (x > limits.max)
     		{
-    			ri = limits.min;
+    			if (x > limits.max + 1)
+    			{
+    				return null;
+    			}
+    			rx = limits.min;
     		}
 
-    		if (ri != i)
+    		if (rx != x)
     		{
-    			console.log('wrap', i,j,'->', ri, j);
+    			console.log('wrap', x,y,'->', rx, y);
     		}
-    		return ri;
+    		return rx;
     	}
     	else
     	{
     		return null;
     	}
     }
+    let get_x_on_other_y_by_x_y = function(target_y, base_x, base_y)
+    {
+		return x * Math.cos(target_y / radius) / Math.cos(y / radius);
+    }
+   planet.surface_matrix.forEach(function (row, i) {
+    	row.forEach(function (cell, j) {
+    		if ('a' in cell)
+    		{
+    			let x = cell['x'];
+    			let y = cell['y'];
+    			// console.log('start neighbours', j, '(' + x +')', i,'(' + y +')');
+    			// let a = cell['a'];
+    			// let b = cell['b'];
 
+    			let y_top = y + 1;
+    			let x_top = x * Math.cos(y_top / planet.radius) / Math.cos(y / planet.radius);
+
+				let i_top = i_from_y(y_top);
+    			let j_top_raw = Math.round(j_from_x(x_top));
+    			// let j_top_raw = (j_from_x(x_top));
+				let j_top = wrap(j_top_raw, i_top);
+
+				if (j_top !== null)
+				{
+					draw_line_between_ij(j, i, j_top, i_top, j_top != j_top_raw);
+				}
+
+				let y_bot = y - 1;
+    			let x_bot = x * Math.cos(y_bot / planet.radius) / Math.cos(y / planet.radius);
+
+				let i_bot = i_from_y(y_bot);
+    			let j_bot_raw = Math.round(j_from_x(x_bot));
+    			// let j_top_raw = (j_from_x(x_top));
+				let j_bot = wrap(j_bot_raw, i_bot);
+
+				if (j_bot !== null)
+				{
+					draw_line_between_ij(j, i, j_bot, i_bot, j_bot != j_bot_raw);
+				}
+
+				let i_left = i;
+    			let j_left_raw = j - 1;
+				let j_left = wrap(j_left_raw, i_left);
+
+				if (j_left !== null)
+				{
+					draw_line_between_ij(j, i, j_left, i_left, j_left != j_left_raw);
+				}
+
+
+				let i_right = i;
+    			let j_right_raw = j - 1;
+				let j_right = wrap(j_right_raw, i_right);
+
+				if (j_right !== null)
+				{
+					draw_line_between_ij(j, i, j_right, i_right, j_right != j_right_raw);
+				}
+
+    			// let x3 = x * Math.cos((y - 1) / planet.radius) / Math.cos(y / planet.radius);
+
+    			// console.log('neighbours', x, x2, x3);
+    			// x2 = Math.round(x2);
+    			// x3 = Math.round(x3);
+				// ti = wrap(ti, tj);
+
+
+				// let c = false;
+
+
+
+
+				// c = false;
+				// x3_ = wrap(x3, y-1);
+				// if (x3_ === null)
+				// {
+				// 	c = true;
+				// }
+				// else
+				// {
+				// 	// draw_line_between(x, y, x3_, y - 1, x3_ != x3);
+				// }
+
+				// let x_right  = x + 1;
+
+				// let x_left  = x - 1;
+
+    			// for(let k = 0; k < neighbours_order.length; ++k)
+    			// {
+    			// 	let ti = i + neighbours_order[k][0];
+    			// 	let tj = j + neighbours_order[k][1];
+    			// 	// if (ti > 0 && tj > 0 && ti < size && tj < size)
+    			// 	// {
+    			// 		ti = wrap(ti, tj);
+    			// 		if (!(ti === null))
+    			// 		{
+    					
+	    		// 			let target = planet.surface_matrix[ti][tj];
+	    		// 			da = target['a'] - a;
+	    		// 			db = target['b'] - b;
+	    		// 			angle = Math.atan2(db, da);
+	    		// 			range = Math.sqrt(da*da + db*db);
+	    		// 			cell['neighbours'].push({'angle':angle, 'range':range, 'cell':target});
+	    		// 			target['neighbours'].push({'angle':normalize(angle + Math.PI), 'range':range, 'cell':cell});
+	    		// 			console.log('push neighbour', angle, range, cell['neighbours'].length, target['neighbours'].length);
+    			// 		}
+    			// 	// }
+    			// }
+
+    		}
+			// console.log('---');
+	
+		});
+	});
  //    neighbours_order = [[1,1], [1,0], [1,-1], [0,1]];
  //    planet.surface_matrix.forEach(function (row, i) {
  //    	row.forEach(function (cell, j) {
