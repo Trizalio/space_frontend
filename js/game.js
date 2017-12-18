@@ -2,7 +2,7 @@
 var player;
 var cursors;
 
-let planet_size = 50;
+let planet_size = 10;
 var planet_description = init_planet(planet_size);
 let pixel_size = 6;
 let frame = 1;

@@ -3,7 +3,7 @@
 let canvas_init_done = false;
 let ctx = null;
 
-let scale = 6;
+let scale = 10;
 let safe_factor = 1;
 let canvas_width = null;
 let canvas_half_width = null;
@@ -37,7 +37,6 @@ function draw_line_between(x1,y1,x2,y2, c)
 	{
 		console.log('canvas is not inited');
 		return;
-		// init_canvas();
 	}
 	ctx.beginPath();
 	if (c)
@@ -69,7 +68,6 @@ function draw_line_between_ij(x1,y1,x2,y2, c)
 	{
 		console.log('canvas is not inited');
 		return;
-		// init_canvas();
 	}
 	ctx.beginPath();
 	if (c)
@@ -146,8 +144,16 @@ function print_matrix2(matrix, field_name, wrapper)
     		{
     			res += ('' + j % 10) + ' ';
     		}
-    		let value = cell[field_name];
-    		line += wrapper(value) + ' ';
+    		if (field_name in cell)
+    		{
+    			let value = cell[field_name];
+    			line += wrapper(value) + ' ';
+    		}
+    		else
+    		{
+
+    			line += 'N ';
+    		}
     	});
 		if (first)
 		{
@@ -252,17 +258,17 @@ function init_planet(size)
 		visual_matrix:visual_matrix, 
 		surface_matrix:logic_matrix, 
 		diameter:size, 
-		radius:radius., 
+		radius:radius, 
 		area:size * Math.PI, 
 		workers:[],
 		alpha:-0.17,
 		beta:-0.53,
-		scale:0.8,
+		scale:1.0,
 		render_required:true
 	};
 
-	// let horisontal_radius = planet.radius * Math.PI;
-	// let vertical_radius = planet.radius * Math.PI / 2;
+	let horisontal_radius_real = planet.radius * Math.PI;
+	let vertical_radius_real = planet.radius * Math.PI / 2;
 
 
 	let horisontal_radius = logic_matrix_width / 2;
@@ -301,33 +307,15 @@ function init_planet(size)
 	    		{
 	    			callback(cell['a'], cell['b'], planet.surface_matrix[i][j]);
 	    		}
-		// while(i--)
-		// {
-			
-			// let j = planet.surface_matrix[i].length;
-			// while(j--)
-			// {
-		// planet.surface_matrix.forEach(function (row, i) {
-			// row.forEach(function (cell, j) {
-				// let x = j + 0.5 - horisontal_radius;
-				// let y = i + 0.5 - vertical_radius;
-				// if (in_planet(planet, x, y))
-				// {
-				// 	let current_horisontal_radius = Math.sqrt(vertical_radius * vertical_radius - y * y) * 2;
-    // 				let b = y / (planet.radius);
-    // 				let a = x / current_horisontal_radius * Math.PI;
-    // 				// console.log(horisontal_radius,'x',planet.radius,' ',current_horisontal_radius, ' ', x,y,'->',a,b)
-    // 				callback(a, b, planet.surface_matrix[i][j]);
-				// }
-				// break;
 			});
 		});
 		
 	};
-    let j_from_x = function(x){return x - 0.5 + horisontal_radius;};
-    let i_from_y = function(y){return y - 0.5 + vertical_radius;};
-    let x_from_j = function(j){return j + 0.5 - horisontal_radius;};
-    let y_from_i = function(i){return i + 0.5 - vertical_radius;};
+	let half_cell = .5;
+    let j_from_x = function(x){return x - half_cell + horisontal_radius;};
+    let i_from_y = function(y){return y - half_cell + vertical_radius;};
+    let x_from_j = function(j){return j + half_cell - horisontal_radius;};
+    let y_from_i = function(i){return i + half_cell - vertical_radius;};
 
     planet.surface_matrix.forEach(function (row, i) {
     	row.forEach(function (cell, j) {
@@ -336,7 +324,7 @@ function init_planet(size)
 			let y = y_from_i(i);
 			if (in_planet(planet, x, y))
 			{
-				let current_horisontal_radius = Math.sqrt(vertical_radius * vertical_radius - y * y) * 2;
+				let current_horisontal_radius = Math.sqrt(vertical_radius_real * vertical_radius_real - y * y) * 2;
 				let b = y / (planet.radius);
 				let a = x / current_horisontal_radius * Math.PI;
 				cell['a'] = a;
@@ -415,14 +403,13 @@ function init_planet(size)
     	if (y in wrapping)
     	{
     		limits = wrapping[y];
-    		rx = x;
     		if (x < limits.min)
     		{
     			if (x < limits.min - 1)
     			{
     				return null;
     			}
-    			rx = limits.max;
+    			x = limits.max;
     		}
     		else if (x > limits.max)
     		{
@@ -430,14 +417,14 @@ function init_planet(size)
     			{
     				return null;
     			}
-    			rx = limits.min;
+    			x = limits.min;
     		}
 
-    		if (rx != x)
-    		{
-    			console.log('wrap', x,y,'->', rx, y);
-    		}
-    		return rx;
+    		// if (rx != x)
+    		// {
+    			// console.log('wrap', x,y,'->', rx, y);
+    		// }
+    		return x;
     	}
     	else
     	{
@@ -446,185 +433,50 @@ function init_planet(size)
     }
     let get_x_on_other_y_by_x_y = function(target_y, base_x, base_y)
     {
-		return x * Math.cos(target_y / radius) / Math.cos(y / radius);
+		return base_x * Math.cos(target_y / radius) / Math.cos(base_y / radius);
     }
-   planet.surface_matrix.forEach(function (row, i) {
+    // neighbours_order = [[1,1], [1,0], [1,-1], [0,1]];
+    // neighbours_order = [[-1,0], [1,0], [0,-1], [0,1]];
+    // let neighbours_order = [[-1,1], [1,-1], [-1,-1], [1,1]];
+    let neighbours_order = [[-1,1], [1,-1], [-1,-1], [1,1], [-1,0], [1,0], [0,-1], [0,1]];
+   	planet.surface_matrix.forEach(function (row, i) {
     	row.forEach(function (cell, j) {
     		if ('a' in cell)
     		{
     			let x = cell['x'];
     			let y = cell['y'];
-    			// console.log('start neighbours', j, '(' + x +')', i,'(' + y +')');
-    			// let a = cell['a'];
-    			// let b = cell['b'];
+    			let a = cell['a'];
+    			let b = cell['b'];
 
-    			let y_top = y + 1;
-    			let x_top = x * Math.cos(y_top / planet.radius) / Math.cos(y / planet.radius);
 
-				let i_top = i_from_y(y_top);
-    			let j_top_raw = Math.round(j_from_x(x_top));
-    			// let j_top_raw = (j_from_x(x_top));
-				let j_top = wrap(j_top_raw, i_top);
+    			for(let k = 0; k < neighbours_order.length; ++k)
+    			{
+    				let target_y = y + neighbours_order[k][0];
+    				let x_on_target_y = get_x_on_other_y_by_x_y(target_y, x, y);
 
-				if (j_top !== null)
-				{
-					draw_line_between_ij(j, i, j_top, i_top, j_top != j_top_raw);
+    				let target_x = x_on_target_y + neighbours_order[k][1];
+
+					let target_i = Math.round(i_from_y(target_y));
+	    			let target_j_raw = Math.round(j_from_x(target_x));
+					let target_j = wrap(target_j_raw, target_i);
+
+
+					if (target_j !== null)
+					{
+						draw_line_between_ij(j, i, target_j, target_i, target_j != target_j_raw);
+    					let target = planet.surface_matrix[target_i][target_j];
+
+						let da = target['a'] - a;
+						let db = target['b'] - b;
+						let angle = Math.atan2(db, da);
+						let range = Math.sqrt(da*da + db*db);
+    					cell['neighbours'].push({'angle':angle, 'range':range, 'cell':target});
+					}
 				}
-
-				let y_bot = y - 1;
-    			let x_bot = x * Math.cos(y_bot / planet.radius) / Math.cos(y / planet.radius);
-
-				let i_bot = i_from_y(y_bot);
-    			let j_bot_raw = Math.round(j_from_x(x_bot));
-    			// let j_top_raw = (j_from_x(x_top));
-				let j_bot = wrap(j_bot_raw, i_bot);
-
-				if (j_bot !== null)
-				{
-					draw_line_between_ij(j, i, j_bot, i_bot, j_bot != j_bot_raw);
-				}
-
-				let i_left = i;
-    			let j_left_raw = j - 1;
-				let j_left = wrap(j_left_raw, i_left);
-
-				if (j_left !== null)
-				{
-					draw_line_between_ij(j, i, j_left, i_left, j_left != j_left_raw);
-				}
-
-
-				let i_right = i;
-    			let j_right_raw = j - 1;
-				let j_right = wrap(j_right_raw, i_right);
-
-				if (j_right !== null)
-				{
-					draw_line_between_ij(j, i, j_right, i_right, j_right != j_right_raw);
-				}
-
-    			// let x3 = x * Math.cos((y - 1) / planet.radius) / Math.cos(y / planet.radius);
-
-    			// console.log('neighbours', x, x2, x3);
-    			// x2 = Math.round(x2);
-    			// x3 = Math.round(x3);
-				// ti = wrap(ti, tj);
-
-
-				// let c = false;
-
-
-
-
-				// c = false;
-				// x3_ = wrap(x3, y-1);
-				// if (x3_ === null)
-				// {
-				// 	c = true;
-				// }
-				// else
-				// {
-				// 	// draw_line_between(x, y, x3_, y - 1, x3_ != x3);
-				// }
-
-				// let x_right  = x + 1;
-
-				// let x_left  = x - 1;
-
-    			// for(let k = 0; k < neighbours_order.length; ++k)
-    			// {
-    			// 	let ti = i + neighbours_order[k][0];
-    			// 	let tj = j + neighbours_order[k][1];
-    			// 	// if (ti > 0 && tj > 0 && ti < size && tj < size)
-    			// 	// {
-    			// 		ti = wrap(ti, tj);
-    			// 		if (!(ti === null))
-    			// 		{
-    					
-	    		// 			let target = planet.surface_matrix[ti][tj];
-	    		// 			da = target['a'] - a;
-	    		// 			db = target['b'] - b;
-	    		// 			angle = Math.atan2(db, da);
-	    		// 			range = Math.sqrt(da*da + db*db);
-	    		// 			cell['neighbours'].push({'angle':angle, 'range':range, 'cell':target});
-	    		// 			target['neighbours'].push({'angle':normalize(angle + Math.PI), 'range':range, 'cell':cell});
-	    		// 			console.log('push neighbour', angle, range, cell['neighbours'].length, target['neighbours'].length);
-    			// 		}
-    			// 	// }
-    			// }
-
     		}
-			// console.log('---');
 	
 		});
 	});
- //    neighbours_order = [[1,1], [1,0], [1,-1], [0,1]];
- //    planet.surface_matrix.forEach(function (row, i) {
- //    	row.forEach(function (cell, j) {
- //    		if ('a' in cell)
- //    		{
- //    			console.log('start neighbours', i, j);
- //    			let a = cell['a'];
- //    			let b = cell['b'];
- //    			for(let k = 0; k < neighbours_order.length; ++k)
- //    			{
- //    				let ti = i + neighbours_order[k][0];
- //    				let tj = j + neighbours_order[k][1];
- //    				// if (ti > 0 && tj > 0 && ti < size && tj < size)
- //    				// {
- //    					ti = wrap(ti, tj);
- //    					if (!(ti === null))
- //    					{
-    					
-	//     					let target = planet.surface_matrix[ti][tj];
-	//     					da = target['a'] - a;
-	//     					db = target['b'] - b;
-	//     					angle = Math.atan2(db, da);
-	//     					range = Math.sqrt(da*da + db*db);
-	//     					cell['neighbours'].push({'angle':angle, 'range':range, 'cell':target});
-	//     					target['neighbours'].push({'angle':normalize(angle + Math.PI), 'range':range, 'cell':cell});
-	//     					console.log('push neighbour', angle, range, cell['neighbours'].length, target['neighbours'].length);
- //    					}
- //    				// }
- //    			}
-
- //    		}
-	// 		console.log('---');
-	
-	// 	});
-	// });
-
- //    planet.surface_matrix.forEach(function (row, i) {
- //    	row.forEach(function (cell, j) {
- //    		if ('a' in cell)
- //    		{
- //    			let a = cell['a'];
- //    			let b = cell['b'];
- //    			for(let k = 0; k < neighbours_order.length; ++k)
- //    			{
- //    				let ti = i + neighbours_order[k][0];
- //    				let tj = j + neighbours_order[k][1];
- //    				if (ti > 0 && tj > 0 && ti < size && tj < size)
- //    				{
- //    					let target = planet.surface_matrix[ti][tj];
-	//     				if ('a' in target)
-	//     				{
-	//     					da = target['a'] - a;
-	//     					db = target['b'] - b;
-	//     					angle = Math.atan2(db, da);
-	//     					range = Math.sqrt(da*da + db*db);
-	//     					cell['neighbours'].push({'angle':angle, 'range':range, 'cell':target});
-	//     					target['neighbours'].push({'angle':normalize(angle + Math.PI), 'range':range, 'cell':cell});
-	//     					console.log('push neighbour', angle, range, cell['neighbours'].length, target['neighbours'].length);
-	//     				}
- //    				}
- //    			}
-
- //    		}
-	// 		console.log('---');
-	
-	// 	});
-	// });
 
 	planet.forEachCell(function (a, b, cell)
 	{
@@ -694,10 +546,10 @@ function render_planet(planet)
     	let i = Math.round(x + planet.radius);
     	let j = Math.round(y + planet.radius);
 		
-		// planet.visual_matrix[j][i].push( '' + cell['neighbours'].length);
+		planet.visual_matrix[j][i].push( '' + 2);//cell['neighbours'].length);
 		// console.log(cell['neighbours'].length + '');
 		// return;
-		planet.visual_matrix[j][i].push( cell['color'] );
+		// planet.visual_matrix[j][i].push( cell['color'] );
     });
 
     planet.visual_matrix.forEach(function (row, i) {
@@ -721,76 +573,7 @@ function render_planet(planet)
     	})
     })
 
-    // planet.visual_matrix[10][4] = "!";
-	// print_matrix(planet.surface_matrix);
-	// print_matrix(planet.visual_matrix);
 	planet.render_required = false;
     return planet.visual_matrix;
 
 }
-
-// function render_planet(planet)
-// {
-// 	console.log('render_planet');
-// 	let size = planet.length;
-// 	let matrix;
-// 	var coef = 1.3;
-
-// 	var size2 = size / 2.;
-// 	var size2_2 = size2 * size2;
-// 	var size2_22 = size2_2 / coef;
-// 	var size2_23 = size2_22 / coef;
-// 	var size2_24 = size2_23 / coef;
-
-//     planet.surface_matrix.forEach(function (row, i) {
-//     	var dx = size2 - i - 0.5;
-//     	var dx_2 = dx * dx;
-//     	row.forEach(function (cell, j) {
-// 	    	var dy = size2 - j - 0.5;
-// 	    	var dy_2 = dy * dy;
-// 	    	var dr_2 = dx_2 + dy_2;
-//     		if (dr_2 < size2_2)
-//     		{
-//     			let frozen = planet[i][j][3] < 0;
-//     			planet[i][j][0] = true;
-//     			if (frozen == false)
-//     			{
-// 	    			let skip = false;
-// 	    			let height = Math.round(cell[1]);
-// 	    			let target = sand;
-// 	    			if (planet[i][j][2])
-// 	    			{
-// 	    				target = water;
-// 	    			}
-// 	    			else if (planet[i][j][4] >= 0.1)
-// 	    			{
-// 	    				target = forest;
-// 	    				let density = Math.max(Math.min(Math.round(planet[i][j][4]), target.length - 1), 0);
-//     					planet.visual_matrix[i][j] = target[density];
-// 	    				skip = true;
-// 	    			}
-
-// 	    			if (skip == false)
-// 	    			{
-// 		    			height = Math.max(Math.min(height, target.length - 1), 0);
-// 						planet.visual_matrix[i][j] = target[height];
-// 					}
-//     			}
-//     			else
-//     			{
-//     				if (planet[i][j][2])
-//     				{
-//     					planet.visual_matrix[i][j] = ice;
-//     				}
-//     				else
-//     				{
-//     					planet.visual_matrix[i][j] = snow;	
-//     				}
-//     			}
-//     		}
-//     	});
-//     });
-// 	// print_matrix(planet.visual_matrix);
-//     return planet.visual_matrix;
-// }
-
