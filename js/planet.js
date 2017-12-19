@@ -3,7 +3,7 @@
 let canvas_init_done = false;
 let ctx = null;
 
-let scale = 10;
+let scale = 1;
 let safe_factor = 1;
 let canvas_width = null;
 let canvas_half_width = null;
@@ -61,7 +61,8 @@ function draw_line_between(x1,y1,x2,y2, c)
 	ctx.stroke();
 }
 
-function draw_line_between_ij(x1,y1,x2,y2, c)
+let line_colors = ['255,0,0', '255,128,0', '255,255,0', '0,255,0', '0,255,255', '0,0,255', '255,0,255', '128,0,255'];
+function draw_line_between_ij(x1,y1,x2,y2, direction, opacity)
 {
 	// console.log('draw_line_between', x1,y1,x2,y2);
 	if (!canvas_init_done)
@@ -70,9 +71,19 @@ function draw_line_between_ij(x1,y1,x2,y2, c)
 		return;
 	}
 	ctx.beginPath();
-	if (c)
+	// let color = 1 << (direction * 3);
+	// let r = (color >> 16) & 255;
+	// let g = (color >> 8) & 255;
+	// let b = color & 255;
+
+
+	// let line_color = "rgba(" + r + "," + g + "," + b + "," + (1 - opacity * 0.5) + ")"
+	let line_color = "rgba(" + line_colors[direction] + "," + (0.6 - opacity * 0.3) + ")"
+	ctx.strokeStyle = line_color;
+	// console.log(direction, line_color, ctx.strokeStyle);
+	if (opacity)
 	{
-		ctx.strokeStyle="#FF0000";
+		// ctx.strokeStyle="#FF0000";
 		if (x1 > x2)
 		{
 			ctx.moveTo(x1*scale - canvas_width, y1*scale);
@@ -99,7 +110,7 @@ function draw_line_between_ij(x1,y1,x2,y2, c)
 		x2 = (x2 * line_k + ax) / (line_k + 1);
 		y1 = (y1 * line_k + ay) / (line_k + 1);
 		y2 = (y2 * line_k + ay) / (line_k + 1);
-		ctx.strokeStyle="#000000";
+		// ctx.strokeStyle="#000000";
 		ctx.moveTo(x1*scale, y1*scale);
 		ctx.lineTo(x2*scale, y2*scale);
 	}
@@ -250,19 +261,21 @@ function init_planet(size)
 	init_canvas(logic_matrix_width, logic_matrix_height);
 	console.log('init_planet', logic_matrix_width, logic_matrix_height);
 	let logic_matrix = init_matrix(logic_matrix_width, logic_matrix_height, empty_description);
+	let max_render_time = 0;
 
-
-
+	let reverse_matrix = init_matrix(size + 2, size + 2, {});
 	let visual_matrix = init_matrix(size + 2, size + 2, empty_visual);
 	planet = {
 		visual_matrix:visual_matrix, 
+		reverse_matrix:reverse_matrix, 
 		surface_matrix:logic_matrix, 
 		diameter:size, 
 		radius:radius, 
 		area:size * Math.PI, 
 		workers:[],
 		alpha:-0.17,
-		beta:-0.53,
+		beta:-0.48,
+		// scale:0.7,
 		scale:1.0,
 		render_required:true
 	};
@@ -291,7 +304,16 @@ function init_planet(size)
 		return randomPlanetPosition(size);
 	};
 	planet.render = function(){
-		return render_planet(planet);
+		let t0 = performance.now();
+		let result =  render_planet(planet);
+		let t1 = performance.now();
+		let render_time = t1 - t0;
+		if (render_time > max_render_time)
+		{
+			max_render_time = render_time;
+			console.log("logic render took " + max_render_time + " milliseconds.")
+		}
+		return result;
 	};
 	planet.forEachCell = function(callback){
 		// let horisontal_radius = planet.radius * Math.PI;
@@ -345,11 +367,11 @@ function init_planet(size)
     	});
     });
     function pad(num, size){ return ('000000000' + num).substr(-size); };
-	print_matrix2(planet.surface_matrix, 'a', function(val){return ('' + Math.abs(val * 0 + 1))[0]});
+	// print_matrix2(planet.surface_matrix, 'a', function(val){return ('' + Math.abs(val * 0 + 1))[0]});
 	// print_matrix2(planet.surface_matrix, 'tx', function(val){return pad(('' + Math.round(Math.abs(val) * 100) % 1000),3)});
 	// print_matrix2(planet.surface_matrix, 'ty', function(val){return ('' + Math.abs(val) % 10)});
-	print_matrix2(planet.surface_matrix, 'a', function(val){return ('' + Math.abs(val * 3))[0]});
-	print_matrix2(planet.surface_matrix, 'b', function(val){return ('' + Math.abs(val * 6))[0]});
+	// print_matrix2(planet.surface_matrix, 'a', function(val){return ('' + Math.abs(val * 3))[0]});
+	// print_matrix2(planet.surface_matrix, 'b', function(val){return ('' + Math.abs(val * 6))[0]});
 
     wrapping = {};
     planet.surface_matrix.forEach(function (row, i) {
@@ -371,7 +393,7 @@ function init_planet(size)
     	});
     	wrapping[i] = {min:min_j, max:max_j};
     });
-	console.log('wrapping', wrapping);
+	// console.log('wrapping', wrapping);
 
  //    wrapping = {};
  //    planet.surface_matrix.forEach(function (row, i) {
@@ -438,7 +460,8 @@ function init_planet(size)
     // neighbours_order = [[1,1], [1,0], [1,-1], [0,1]];
     // neighbours_order = [[-1,0], [1,0], [0,-1], [0,1]];
     // let neighbours_order = [[-1,1], [1,-1], [-1,-1], [1,1]];
-    let neighbours_order = [[-1,1], [1,-1], [-1,-1], [1,1], [-1,0], [1,0], [0,-1], [0,1]];
+    let neighbours_order = [[0,1],[1,0]];
+    // let neighbours_order = [[-1,1], [1,-1], [-1,-1], [1,1], [-1,0], [1,0], [0,-1], [0,1]];
    	planet.surface_matrix.forEach(function (row, i) {
     	row.forEach(function (cell, j) {
     		if ('a' in cell)
@@ -463,14 +486,25 @@ function init_planet(size)
 
 					if (target_j !== null)
 					{
-						draw_line_between_ij(j, i, target_j, target_i, target_j != target_j_raw);
     					let target = planet.surface_matrix[target_i][target_j];
 
 						let da = target['a'] - a;
 						let db = target['b'] - b;
 						let angle = Math.atan2(db, da);
+						if (a > 0)
+						{
+							angle += Math.PI;
+							angle = normalize(angle);
+						}
+
 						let range = Math.sqrt(da*da + db*db);
     					cell['neighbours'].push({'angle':angle, 'range':range, 'cell':target});
+    					let d = Math.round((angle + Math.PI) / Math.PI * 3.5);
+    					if (d > 8)
+    					{
+    						console.log('angle', angle, 'd', d);
+    					}
+						draw_line_between_ij(j, i, target_j, target_i, d, Number(target_j != target_j_raw));
 					}
 				}
     		}
@@ -517,7 +551,9 @@ function render_planet(planet)
     	row.forEach(function (cell, j) {
     		planet.visual_matrix[i][j] = [];
     	})
-    })
+    });
+
+    let reverse_matrix = planet.reverse_matrix
 
 	console.log('render_planet', planet.alpha, planet.beta, planet.scale);
 	let radius = planet.scale * planet.radius;
@@ -546,24 +582,78 @@ function render_planet(planet)
     	let i = Math.round(x + planet.radius);
     	let j = Math.round(y + planet.radius);
 		
-		planet.visual_matrix[j][i].push( '' + 2);//cell['neighbours'].length);
+		// planet.visual_matrix[j][i].push( '' + 2);//cell['neighbours'].length);
 		// console.log(cell['neighbours'].length + '');
 		// return;
-		// planet.visual_matrix[j][i].push( cell['color'] );
+		planet.visual_matrix[j][i].push( cell['color'] );
+		planet.reverse_matrix[j][i] = cell;
+    });
+
+
+    planet.visual_matrix.forEach(function (row, i) {
+    	let right_index = row.length;
+    	let right_planet_edge = 0;
+    	let left_planet_edge = row.length;
+    	while(--right_index)
+    	{
+    		if (row[right_index].length)
+    		{
+    			// console.log(row[right_index], row[right_index].length);
+    			right_planet_edge = right_index;
+    			break;
+    		}
+
+    	}
+    	for (let left_index = 0; left_index < row.length; ++left_index)
+    	{
+
+    		if (row[left_index].length)
+    		{
+    			// console.log(row[left_index], row[left_index].length);
+    			left_planet_edge = left_index;
+    			break;
+    		}
+    	}
+
+    	let last_cell = [];
+    	let damaged_cell_js = [];
+    	// console.log(i, ':', left_planet_edge, '-', right_planet_edge);
+    	for (let j = left_planet_edge; j <= right_planet_edge; ++j)
+    	{
+    		if (row[j].length == 0)
+    		{
+    			// console.log(last_cell);
+				// row[j-1] = [];
+    			damaged_cell_js.push(j);
+    		}
+    		else
+    		{
+    			if (damaged_cell_js.length)
+    			{
+					// console.log('damaged_cell_js', damaged_cell_js.length);
+    				for (let k = 0; k < damaged_cell_js.length; ++k)
+    				{
+    					row[damaged_cell_js[k]] = last_cell.concat(row[j]);
+
+    				}
+    				damaged_cell_js = [];
+    			}
+    			last_cell = row[j];
+    		}
+    	}
     });
 
     planet.visual_matrix.forEach(function (row, i) {
     	row.forEach(function (cell, j) {
     		let sum = 0;
-    		let arr = planet.visual_matrix[i][j];
-    		if (arr.length)
+    		if (cell.length)
     		{
-				for( let k = 0; k < arr.length; k++ ){
-				    sum += parseInt(arr[k], 16);
+				for( let k = 0; k < cell.length; k++ ){
+				    sum += parseInt(cell[k], 16);
 				}
 
-				let  avg = sum / arr.length;
-				// avg = arr.length;
+				let  avg = sum / cell.length;
+				// avg = cell.length;
 	    		planet.visual_matrix[i][j] = letters[Math.round(avg)];
 	    	}
 	    	else
@@ -571,7 +661,7 @@ function render_planet(planet)
 	    		planet.visual_matrix[i][j] = empty_visual;
 	    	}
     	})
-    })
+    });
 
 	planet.render_required = false;
     return planet.visual_matrix;
