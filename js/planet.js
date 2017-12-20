@@ -1,4 +1,4 @@
-
+"use strict";
 
 let canvas_init_done = false;
 let ctx = null;
@@ -248,6 +248,8 @@ function pair_to_text(a, b)
 }
 
 let letters = ['1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'];
+let shadow = ['.', 'C', 'C']
+let spark = ['.', '2', '2']
 let line_width = 0.03;
 let lines_on_planet = 12;
 let line_step = Math.PI * 2 / lines_on_planet;
@@ -265,8 +267,14 @@ function init_planet(size)
 
 	let reverse_matrix = init_matrix(size + 2, size + 2, {});
 	let visual_matrix = init_matrix(size + 2, size + 2, empty_visual);
-	planet = {
+	let shadow_matrix_1 = init_matrix(size + 2, size + 2, empty_visual);
+	let shadow_matrix_2 = init_matrix(size + 2, size + 2, empty_visual);
+	let shadow_matrix_3 = init_matrix(size + 2, size + 2, empty_visual);
+	let planet = {
 		visual_matrix:visual_matrix, 
+		shadow_matrix_1:shadow_matrix_1, 
+		shadow_matrix_2:shadow_matrix_2, 
+		shadow_matrix_3:shadow_matrix_3, 
 		reverse_matrix:reverse_matrix, 
 		surface_matrix:logic_matrix, 
 		diameter:size, 
@@ -373,7 +381,7 @@ function init_planet(size)
 	// print_matrix2(planet.surface_matrix, 'a', function(val){return ('' + Math.abs(val * 3))[0]});
 	// print_matrix2(planet.surface_matrix, 'b', function(val){return ('' + Math.abs(val * 6))[0]});
 
-    wrapping = {};
+    let wrapping = {};
     planet.surface_matrix.forEach(function (row, i) {
     	let min_j = row.length;
     	let max_j = -1;
@@ -420,11 +428,11 @@ function init_planet(size)
  //    });
 	// console.log('wrapping', wrapping);
 
-    wrap = function(x, y)
+    let wrap = function(x, y)
     {
     	if (y in wrapping)
     	{
-    		limits = wrapping[y];
+    		let limits = wrapping[y];
     		if (x < limits.min)
     		{
     			if (x < limits.min - 1)
@@ -519,6 +527,7 @@ function init_planet(size)
 		// cell[0] = pair_to_text(a, b);
 		// cell[0] = Math.random() * 8 + 1;
 		cell['color'] = letters[Math.abs(Math.round(b * (letters.length / Math.PI * 2 - 1)))];
+		cell['height'] = Math.abs(Math.round(b * (letters.length / Math.PI * 2 - 1)));
 
 		a = a + Math.PI;
 		if (a % line_step > lines_start)
@@ -550,8 +559,15 @@ function render_planet(planet)
     planet.visual_matrix.forEach(function (row, i) {
     	row.forEach(function (cell, j) {
     		planet.visual_matrix[i][j] = [];
+    		planet.reverse_matrix[i][j] = [];
+    		planet.shadow_matrix_1[i][j] = [];
+    		planet.shadow_matrix_2[i][j] = [];
+    		planet.shadow_matrix_3[i][j] = [];
     	})
     });
+
+    let sun_alpha = 0;
+    let sun_beta = 0;
 
     let reverse_matrix = planet.reverse_matrix
 
@@ -581,12 +597,62 @@ function render_planet(planet)
     	
     	let i = Math.round(x + planet.radius);
     	let j = Math.round(y + planet.radius);
+
+    	let sun_delta_alpha = a - sun_alpha;
+    	let sun_delta_beta = b - sun_beta;
+
+    	let brightness = Math.cos(sun_delta_alpha) * Math.cos(sun_delta_beta);
+    	let k = 1;
+    	let kp = 0.6;
+  //   	if (brightness < 0.5)
+  //   	{
+  //   		k *= kp;
+		// 	planet.shadow_matrix_1[j][i].push(1);
+		// 	if (brightness < 0.25)
+  //   		{
+  //   			k *= kp;
+		// 		// planet.shadow_matrix_2[j][i].push(1);
+		// 		if (brightness < 0.125)
+	 //    		{
+  //   				k *= kp;
+		// 			// planet.shadow_matrix_3[j][i].push(1);
+		// 		}
+		// 		else
+		// 		{
+		// 			// planet.shadow_matrix_3[j][i].push(0);
+		// 		}
+		// 	}
+		// 	else
+		// 	{
+		// 		// planet.shadow_matrix_2[j][i].push(0);
+		// 	}
+  //   	}
+		// else
+		// {
+		// }
+
+    	let mid_sun_alpha = (sun_alpha + planet.alpha) / 2 + Math.PI;
+    	let mid_sun_beta = (sun_beta + planet.beta) / 2;
+
+    	let mid_sun_delta_alpha = a - mid_sun_alpha;
+    	let mid_sun_delta_beta = b - mid_sun_beta;
+
+    	let spark =  Math.cos(mid_sun_delta_alpha) * Math.cos(mid_sun_delta_beta);
+    	spark = spark * spark * spark;
+
+
+
+		planet.shadow_matrix_1[j][i].push((brightness + 1) * 1.5);
+		planet.shadow_matrix_2[j][i].push((brightness + 1) / 2);
+		planet.shadow_matrix_3[j][i].push((spark + 1) / 3.9);
+		// console.log(a,b,brightness);
+
 		
 		// planet.visual_matrix[j][i].push( '' + 2);//cell['neighbours'].length);
 		// console.log(cell['neighbours'].length + '');
 		// return;
-		planet.visual_matrix[j][i].push( cell['color'] );
-		planet.reverse_matrix[j][i] = cell;
+		planet.visual_matrix[j][i].push(cell['height'] * k);
+		planet.reverse_matrix[j][i].push(cell)
     });
 
 
@@ -649,7 +715,8 @@ function render_planet(planet)
     		if (cell.length)
     		{
 				for( let k = 0; k < cell.length; k++ ){
-				    sum += parseInt(cell[k], 16);
+				    // sum += parseInt(cell[k], 16);
+				    sum += cell[k];
 				}
 
 				let  avg = sum / cell.length;
@@ -663,6 +730,71 @@ function render_planet(planet)
     	})
     });
 
+
+    planet.shadow_matrix_1.forEach(function (row, i) {
+    	row.forEach(function (cell, j) {
+    		if (cell.length)
+    		{
+    			let sum = 0;
+				for( let k = 0; k < cell.length; k++ ){
+				    // sum += parseInt(cell[k], 16);
+				    sum += cell[k];
+				}
+
+				let  avg = sum / cell.length;
+				// avg = cell.length;
+				// console.log(avg, sum, cell.length);
+	    		planet.shadow_matrix_1[i][j] = shadow[Math.round(avg)];
+	    	}
+	    	else
+	    	{
+	    		planet.shadow_matrix_1[i][j] = empty_visual;
+	    	}
+    	})
+    });
+
+    planet.shadow_matrix_2.forEach(function (row, i) {
+    	row.forEach(function (cell, j) {
+    		if (cell.length)
+    		{
+    			let sum = 0;
+				for( let k = 0; k < cell.length; k++ ){
+				    // sum += parseInt(cell[k], 16);
+				    sum += cell[k];
+				}
+
+				let  avg = sum / cell.length;
+				// avg = cell.length;
+				// console.log(avg, sum, cell.length);
+	    		planet.shadow_matrix_2[i][j] = shadow[Math.round(avg)];
+	    	}
+	    	else
+	    	{
+	    		planet.shadow_matrix_2[i][j] = empty_visual;
+	    	}
+    	})
+    });
+    planet.shadow_matrix_3.forEach(function (row, i) {
+    	row.forEach(function (cell, j) {
+    		if (cell.length)
+    		{
+    			let sum = 0;
+				for( let k = 0; k < cell.length; k++ ){
+				    // sum += parseInt(cell[k], 16);
+				    sum += cell[k];
+				}
+
+				let  avg = sum / cell.length;
+				// avg = cell.length;
+				// console.log(avg, sum, cell.length);
+	    		planet.shadow_matrix_3[i][j] = spark[Math.round(avg)];
+	    	}
+	    	else
+	    	{
+	    		planet.shadow_matrix_3[i][j] = empty_visual;
+	    	}
+    	})
+    });
 	planet.render_required = false;
     return planet.visual_matrix;
 

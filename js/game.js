@@ -1,5 +1,8 @@
-
+"use strict";
 var player;
+let player_shadow_1;
+let player_shadow_2;
+let player_shadow_3;
 var cursors;
 
 let planet_size = 50;
@@ -13,8 +16,26 @@ var game = new Phaser.Game(canvas_size, canvas_size, Phaser.CANVAS, 'phaser-exam
 function listener (arg1, arg2, arg3) {
 
 	console.log('listner', arg1, arg2, arg3);
-	console.log(arg2.interactiveCandidates.length);
-	console.log(arg2.interactiveCandidates);
+	// console.log(arg2.interactiveCandidates.length);
+	// console.log(arg2.interactiveCandidates);
+	// console.log(arg2.x, arg2.y);
+	// console.log(arg2.screenX, arg2.screenY);
+	// console.log(arg2.pageX, arg2.pageY);
+	// console.log(arg2.pageX, arg2.pageY);
+
+	let dx = (arg2.x - arg1.position.x + arg1.anchor.x * arg1.texture.width * arg1.scale.x) / arg1.scale.x;
+	let dy = (arg2.y - arg1.position.y + arg1.anchor.y * arg1.texture.height * arg1.scale.y) / arg1.scale.y;
+	let cx = Math.round(dx / pixel_size);
+	let cy = Math.round(dy / pixel_size);
+	let targets = planet_description.reverse_matrix[cy][cx]
+	for (let i = 0; i < targets.length; ++i)
+	{
+		targets[i].height += 1;
+	}
+	// planet_description.reverse_matrix[cy][cx].height += 1;
+	// console.log(planet_description.reverse_matrix[cy][cx].height);
+
+	console.log(dx, dy);
 
 }
 
@@ -22,14 +43,15 @@ function on_panet_render(arg)
 {
 	if ( !player)
 	{
+ 		// player = game.add.sprite(0, 0, 'planet');
  		player = game.add.sprite(canvas_size / 2, canvas_size/2, 'planet');
 		player.anchor.set(0.5);
-    	player.inputEnabled = true;
 
-		// player.events.onInputDown.add(listener, this);
+    	player.inputEnabled = true;
 		player.events.onInputUp.add(listener, this);
 
     	game.physics.arcade.enable(player);
+
 		console.log('on_panet_render', game);
     	// player.events.onInputDown.add(listener, game);
  	}
@@ -40,6 +62,59 @@ function on_panet_render(arg)
 
  	}
 }
+
+function on_shadow_render_1(arg)
+{
+	if ( !player_shadow_1)
+	{
+    	player_shadow_1 = game.add.sprite(canvas_size / 2, canvas_size/2, 'player_shadow_1');
+		player_shadow_1.anchor.set(0.5);
+		player_shadow_1.alpha = 0.3;
+
+
+		console.log('on_player_shadow_1_render', game);
+ 	}
+ 	else
+ 	{
+    	player_shadow_1.loadTexture(arg);
+
+    	// counter = 0;
+ 	}
+ }
+
+function on_shadow_render_2(arg)
+{
+	if ( !player_shadow_2)
+	{
+    	player_shadow_2 = game.add.sprite(canvas_size / 2, canvas_size/2, 'player_shadow_2');
+		player_shadow_2.anchor.set(0.5);
+		player_shadow_2.alpha = 0.5;
+
+
+		console.log('on_player_shadow_1_render', game);
+ 	}
+ 	else
+ 	{
+    	player_shadow_2.loadTexture(arg);
+ 	}
+ }
+
+function on_shadow_render_3(arg)
+{
+	if ( !player_shadow_3)
+	{
+    	player_shadow_3 = game.add.sprite(canvas_size / 2, canvas_size/2, 'player_shadow_3');
+		player_shadow_3.anchor.set(0.5);
+		player_shadow_3.alpha = 0.7;
+
+
+		console.log('on_player_shadow_1_render', game);
+ 	}
+ 	else
+ 	{
+    	player_shadow_3.loadTexture(arg);
+ 	}
+ }
 
 function mouseWheel(event) {
   console.log(event);
@@ -64,6 +139,9 @@ function create() {
 
     let planet_data = planet_description.render();
 	game.create.texture('planet', planet_data, pixel_size, pixel_size, 0, true, on_panet_render);
+	game.create.texture('player_shadow_1', planet_description.shadow_matrix_1, pixel_size, pixel_size, 0, true, on_shadow_render_1);
+	game.create.texture('player_shadow_2', planet_description.shadow_matrix_2, pixel_size, pixel_size, 0, true, on_shadow_render_2);
+	game.create.texture('player_shadow_3', planet_description.shadow_matrix_3, pixel_size, pixel_size, 0, true, on_shadow_render_3);
 	console.log('create', this);
 
     cursors = game.input.keyboard.createCursorKeys();
@@ -77,7 +155,7 @@ function create() {
 
 var counter = 0;
 
-
+let deformation_complete = false;
 
 function update() {
 	// console.log(counter);
@@ -87,7 +165,7 @@ function update() {
 		// console.log('init deformation')
 		if (deformation_complete == false)
 		{
-			// deformate_planet(planet_description);
+			deformation_complete = deformate_planet(planet_description);
 			// deformate_planet(planet_description);
 			// deformate_planet(planet_description);
 			// deformate_planet(planet_description);
@@ -115,10 +193,13 @@ function update() {
 		}
 		// skip = true;
 
-		if (skip == false && planet_description.render_required)
+		if (skip == false || planet_description.render_required)
 		{
 		    let planet_data = planet_description.render();
 			game.create.texture('planet1', planet_data, 6, 6, 0, true, on_panet_render);
+			game.create.texture('player_shadow_1_', planet_description.shadow_matrix_1, pixel_size, pixel_size, 0, true, on_shadow_render_1);
+			game.create.texture('player_shadow_2_', planet_description.shadow_matrix_2, pixel_size, pixel_size, 0, true, on_shadow_render_2);
+			game.create.texture('player_shadow_3_', planet_description.shadow_matrix_3, pixel_size, pixel_size, 0, true, on_shadow_render_3);
 			counter++;
 		}
 	}
@@ -180,8 +261,8 @@ function update() {
 
 function render() {
 
-    var name = (game.input.activePointer.targetObject) ? game.input.activePointer.targetObject.sprite.key : 'none';
+    // var name = (game.input.activePointer.targetObject) ? game.input.activePointer.targetObject.sprite.key : 'none';
 
-    game.debug.text("Pointer Target: " + name, 32, 32);
+    // game.debug.text("Pointer Target: " + name, 32, 32);
 
 }
