@@ -138,10 +138,11 @@ function create() {
 
 
     let planet_data = planet_description.render();
-	game.create.texture('planet', planet_data, pixel_size, pixel_size, 0, true, on_panet_render);
-	game.create.texture('player_shadow_1', planet_description.shadow_matrix_1, pixel_size, pixel_size, 0, true, on_shadow_render_1);
-	game.create.texture('player_shadow_2', planet_description.shadow_matrix_2, pixel_size, pixel_size, 0, true, on_shadow_render_2);
-	game.create.texture('player_shadow_3', planet_description.shadow_matrix_3, pixel_size, pixel_size, 0, true, on_shadow_render_3);
+	generateTexture(game, 'planet1', planet_data, 6, 6, on_panet_render);
+	// game.create.texture('planet', planet_data, pixel_size, pixel_size, 0, true, on_panet_render);
+	// game.create.texture('player_shadow_1', planet_description.shadow_matrix_1, pixel_size, pixel_size, 0, true, on_shadow_render_1);
+	// game.create.texture('player_shadow_2', planet_description.shadow_matrix_2, pixel_size, pixel_size, 0, true, on_shadow_render_2);
+	// game.create.texture('player_shadow_3', planet_description.shadow_matrix_3, pixel_size, pixel_size, 0, true, on_shadow_render_3);
 	console.log('create', this);
 
     cursors = game.input.keyboard.createCursorKeys();
@@ -196,10 +197,11 @@ function update() {
 		if (skip == false || planet_description.render_required)
 		{
 		    let planet_data = planet_description.render();
-			game.create.texture('planet1', planet_data, 6, 6, 0, true, on_panet_render);
-			game.create.texture('player_shadow_1_', planet_description.shadow_matrix_1, pixel_size, pixel_size, 0, true, on_shadow_render_1);
-			game.create.texture('player_shadow_2_', planet_description.shadow_matrix_2, pixel_size, pixel_size, 0, true, on_shadow_render_2);
-			game.create.texture('player_shadow_3_', planet_description.shadow_matrix_3, pixel_size, pixel_size, 0, true, on_shadow_render_3);
+			// game.create.texture('planet1', planet_data, 6, 6, 0, true, on_panet_render);
+			generateTexture(game, 'planet1', planet_data, 6, 6, on_panet_render);
+			// game.create.texture('player_shadow_1_', planet_description.shadow_matrix_1, pixel_size, pixel_size, 0, true, on_shadow_render_1);
+			// game.create.texture('player_shadow_2_', planet_description.shadow_matrix_2, pixel_size, pixel_size, 0, true, on_shadow_render_2);
+			// game.create.texture('player_shadow_3_', planet_description.shadow_matrix_3, pixel_size, pixel_size, 0, true, on_shadow_render_3);
 			counter++;
 		}
 	}
