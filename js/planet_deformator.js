@@ -1,8 +1,62 @@
 
+
+function normalize(angle)
+{
+	while (angle > Math.PI)
+	{
+		angle -= 2 * Math.PI;
+	}
+	while (angle < -Math.PI)
+	{
+		angle += 2 * Math.PI;
+	}
+	return angle;
+}
+
+
+
 function deformate_planet(planet)
 {
-	console.log('deformate_planet');
-	return true;
+	console.log('deformate_planet', planet.deformators);
+
+	// if (!planet.deformators || planet.deformators.length < deformate_amount * 2)
+	// {
+
+	if (!planet.deformators)
+	{
+		planet.deformators = [];
+	}
+
+	for (let i = 0; i < planet.deformators.length; ++i)
+	{
+		let deformator = planet.deformators[i];
+		// console.log('deformator', deformator);
+		let target_neighbour = null;
+		let min_delta = 2 * Math.PI;
+		for (let j = 0; j < deformator.cell.neighbours.length; ++j)
+		{
+
+			let neighbour = deformator.cell.neighbours[j];
+			let delta = Math.abs(normalize(neighbour.angle - deformator.angle));
+			if (delta < min_delta)
+			{
+				min_delta = delta;
+				target_neighbour = neighbour;
+			}
+
+		}
+		// console.log('target_neighbour', target_neighbour);
+
+		if (target_neighbour)
+		{
+			deformator.cell.height = 0;
+			deformator.cell = target_neighbour.cell;
+		}
+		// console.log('deformator');
+		// console.log(deformator.cell);
+		// console.log(deformator.cell.neighbours);
+	}
+	return false;
 }
 
 // var deformators = []

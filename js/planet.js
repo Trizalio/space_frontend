@@ -469,8 +469,9 @@ function init_planet(size)
     // neighbours_order = [[1,1], [1,0], [1,-1], [0,1]];
     // neighbours_order = [[-1,0], [1,0], [0,-1], [0,1]];
     // let neighbours_order = [[-1,1], [1,-1], [-1,-1], [1,1]];
-    let neighbours_order = [[0,1],[1,0]];
-    // let neighbours_order = [[-1,1], [1,-1], [-1,-1], [1,1], [-1,0], [1,0], [0,-1], [0,1]];
+    // let neighbours_order = [[0,1],[1,0]];
+    let neighbours_order = [[-1,1], [1,-1], [-1,-1], [1,1], [-1,0], [1,0], [0,-1], [0,1]];
+    // let neighbours_order = [];
    	planet.surface_matrix.forEach(function (row, i) {
     	row.forEach(function (cell, j) {
     		if ('a' in cell)
@@ -528,7 +529,7 @@ function init_planet(size)
 		// cell[0] = pair_to_text(a, b);
 		// cell[0] = Math.random() * 8 + 1;
 		// cell['color'] = letters[Math.abs(Math.round(b * (letters.length / Math.PI * 2 - 1)))];
-		cell['height'] = Math.random() * 10 ;//Math.abs(Math.round(b * (letters.length / Math.PI * 2 - 1)));
+		cell['height'] = 5 + Math.random() * 5  + Math.abs(b / Math.PI * 15);
 
 		a = a + Math.PI;
 		if (a % line_step > lines_start)
@@ -670,6 +671,7 @@ function render_planet(planet)
 		color_r += _color_r * spark;
 		color_g += _color_g * spark;
 		color_b += _color_b * spark;
+		// brightness = 1;
 		planet.visual_matrix[j][i].push({r:color_r * k * brightness, g:color_g * k * brightness, b:color_b * k * brightness});
 		// planet.visual_matrix[j][i].push(cell['height'] * k);
 		planet.reverse_matrix[j][i].push(cell)
