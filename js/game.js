@@ -109,7 +109,7 @@ let deformation_complete = false;
 
 function update() {
 	// console.log(counter);
-	if (counter == 3)
+	if (counter == 5)
 	{
 		let skip = false;
 		// console.log('init deformation')

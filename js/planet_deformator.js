@@ -56,7 +56,7 @@ function deformate_planet(planet)
 		// console.log(deformator.cell);
 		// console.log(deformator.cell.neighbours);
 	}
-	return false;
+	return true;
 }
 
 // var deformators = []

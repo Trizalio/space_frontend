@@ -268,11 +268,13 @@ function init_planet(size)
 
 	let reverse_matrix = init_matrix(size + 2, size + 2, {});
 	let visual_matrix = init_matrix(size + 2, size + 2, empty_visual);
+	let pre_visual_matrix = init_matrix(size + 2, size + 2, {});;
 	let shadow_matrix_1 = init_matrix(size + 2, size + 2, empty_visual);
 	let shadow_matrix_2 = init_matrix(size + 2, size + 2, empty_visual);
 	let shadow_matrix_3 = init_matrix(size + 2, size + 2, empty_visual);
 	let planet = {
 		visual_matrix:visual_matrix, 
+		pre_visual_matrix:pre_visual_matrix,
 		shadow_matrix_1:shadow_matrix_1, 
 		shadow_matrix_2:shadow_matrix_2, 
 		shadow_matrix_3:shadow_matrix_3, 
@@ -529,7 +531,8 @@ function init_planet(size)
 		// cell[0] = pair_to_text(a, b);
 		// cell[0] = Math.random() * 8 + 1;
 		// cell['color'] = letters[Math.abs(Math.round(b * (letters.length / Math.PI * 2 - 1)))];
-		cell['height'] = 5 + Math.random() * 5  + Math.abs(b / Math.PI * 15);
+		// cell['height'] = 5 + Math.random() * 5  ; //+ Math.abs(b / Math.PI * 15);
+		cell['height'] = 1 + Math.abs(Math.sin(a * 2)) * 5 + Math.abs(Math.sin(b * 4)) * 5  ; //+ Math.abs(b / Math.PI * 15);
 
 		a = a + Math.PI;
 		if (a % line_step > lines_start)
@@ -560,6 +563,7 @@ function render_planet(planet)
 	
     planet.visual_matrix.forEach(function (row, i) {
     	row.forEach(function (cell, j) {
+    		planet.pre_visual_matrix[i][j] = new Map();
     		planet.visual_matrix[i][j] = [];
     		planet.reverse_matrix[i][j] = [];
     		planet.shadow_matrix_1[i][j] = [];
@@ -574,12 +578,15 @@ function render_planet(planet)
     let reverse_matrix = planet.reverse_matrix
 
 	console.log('render_planet', planet.alpha, planet.beta, planet.scale);
-	let radius = planet.scale * planet.radius;
+	
 
     planet.forEachCell(function (a, b, cell) {
+    	let radius = planet.scale * (planet.radius - cell['height']);
+
     	let absolute_a = a + planet.alpha;
     	absolute_a = normalize(absolute_a);
 
+    	
     	let y = radius * Math.sin(b);
     	let z = radius * Math.cos(b);
 
@@ -671,87 +678,131 @@ function render_planet(planet)
 		color_r += _color_r * spark;
 		color_g += _color_g * spark;
 		color_b += _color_b * spark;
+
+		color_r *= k * brightness;
+		color_g *= k * brightness;
+		color_b *= k * brightness;
 		// brightness = 1;
-		planet.visual_matrix[j][i].push({r:color_r * k * brightness, g:color_g * k * brightness, b:color_b * k * brightness});
+		planet.pre_visual_matrix[j][i].set(tz, {r:color_r, g:color_g, b:color_b});
+		// planet.visual_matrix[j][i].push({r:color_r * k * brightness, g:color_g * k * brightness, b:color_b * k * brightness});
 		// planet.visual_matrix[j][i].push(cell['height'] * k);
-		planet.reverse_matrix[j][i].push(cell)
+		// planet.reverse_matrix[j][i].push(cell)
     });
 
 
-    planet.visual_matrix.forEach(function (row, i) {
-    	let right_index = row.length;
-    	let right_planet_edge = 0;
-    	let left_planet_edge = row.length;
-    	while(--right_index)
-    	{
-    		if (row[right_index].length)
-    		{
-    			// console.log(row[right_index], row[right_index].length);
-    			right_planet_edge = right_index;
-    			break;
-    		}
+    // planet.visual_matrix.forEach(function (row, i) {
+    // 	let right_index = row.length;
+    // 	let right_planet_edge = 0;
+    // 	let left_planet_edge = row.length;
+    // 	while(--right_index)
+    // 	{
+    // 		if (row[right_index].length)
+    // 		{
+    // 			// console.log(row[right_index], row[right_index].length);
+    // 			right_planet_edge = right_index;
+    // 			break;
+    // 		}
 
-    	}
-    	for (let left_index = 0; left_index < row.length; ++left_index)
-    	{
+    // 	}
+    // 	for (let left_index = 0; left_index < row.length; ++left_index)
+    // 	{
 
-    		if (row[left_index].length)
-    		{
-    			// console.log(row[left_index], row[left_index].length);
-    			left_planet_edge = left_index;
-    			break;
-    		}
-    	}
+    // 		if (row[left_index].length)
+    // 		{
+    // 			// console.log(row[left_index], row[left_index].length);
+    // 			left_planet_edge = left_index;
+    // 			break;
+    // 		}
+    // 	}
 
-    	let last_cell = [];
-    	let damaged_cell_js = [];
-    	// console.log(i, ':', left_planet_edge, '-', right_planet_edge);
-    	for (let j = left_planet_edge; j <= right_planet_edge; ++j)
-    	{
-    		if (row[j].length == 0)
-    		{
-    			// console.log(last_cell);
-				// row[j-1] = [];
-    			damaged_cell_js.push(j);
-    		}
-    		else
-    		{
-    			if (damaged_cell_js.length)
-    			{
-					// console.log('damaged_cell_js', damaged_cell_js.length);
-    				for (let k = 0; k < damaged_cell_js.length; ++k)
-    				{
-    					row[damaged_cell_js[k]] = last_cell.concat(row[j]);
+    // 	let last_cell = [];
+    // 	let damaged_cell_js = [];
+    // 	// console.log(i, ':', left_planet_edge, '-', right_planet_edge);
+    // 	for (let j = left_planet_edge; j <= right_planet_edge; ++j)
+    // 	{
+    // 		if (row[j].length == 0)
+    // 		{
+    // 			// console.log(last_cell);
+				// // row[j-1] = [];
+    // 			damaged_cell_js.push(j);
+    // 		}
+    // 		else
+    // 		{
+    // 			if (damaged_cell_js.length)
+    // 			{
+				// 	// console.log('damaged_cell_js', damaged_cell_js.length);
+    // 				for (let k = 0; k < damaged_cell_js.length; ++k)
+    // 				{
+    // 					row[damaged_cell_js[k]] = last_cell.concat(row[j]);
 
-    				}
-    				damaged_cell_js = [];
-    			}
-    			last_cell = row[j];
-    		}
-    	}
-    });
+    // 				}
+    // 				damaged_cell_js = [];
+    // 			}
+    // 			last_cell = row[j];
+    // 		}
+    // 	}
+    // });
 
-    planet.visual_matrix.forEach(function (row, i) {
+    // planet.visual_matrix.forEach(function (row, i) {
+    // 	row.forEach(function (cell, j) {
+    // 		let sum_r = 0;
+    // 		let sum_g = 0;
+    // 		let sum_b = 0;
+    // 		// let sum_a = 0;
+    // 		if (cell.length)
+    // 		{
+				// for( let k = 0; k < cell.length; k++ ){
+				//     // sum += parseInt(cell[k], 16);
+				//     sum_r += cell[k].r;
+				//     sum_g += cell[k].g;
+				//     sum_b += cell[k].b;
+				//     // sum_a += cell[k].a;
+				// }
+
+				// let avg_r = sum_r / cell.length;
+				// let avg_g = sum_g / cell.length;
+				// let avg_b = sum_b / cell.length;
+				// // avg = cell.length;
+	   //  		planet.visual_matrix[i][j] = {r:Math.round(avg_r), g:Math.round(avg_g), b:Math.round(avg_b)};
+	   //  	}
+	   //  	else
+	   //  	{
+	   //  		planet.visual_matrix[i][j] = empty_visual;
+	   //  	}
+    // 	})
+    // });
+
+    planet.pre_visual_matrix.forEach(function (row, i) {
     	row.forEach(function (cell, j) {
-    		let sum_r = 0;
-    		let sum_g = 0;
-    		let sum_b = 0;
+    		// let sum_r = 0;
+    		// let sum_g = 0;
+    		// let sum_b = 0;
     		// let sum_a = 0;
-    		if (cell.length)
-    		{
-				for( let k = 0; k < cell.length; k++ ){
-				    // sum += parseInt(cell[k], 16);
-				    sum_r += cell[k].r;
-				    sum_g += cell[k].g;
-				    sum_b += cell[k].b;
-				    // sum_a += cell[k].a;
-				}
 
-				let avg_r = sum_r / cell.length;
-				let avg_g = sum_g / cell.length;
-				let avg_b = sum_b / cell.length;
-				// avg = cell.length;
-	    		planet.visual_matrix[i][j] = {r:Math.round(avg_r), g:Math.round(avg_g), b:Math.round(avg_b)};
+			// console.log(i, j, cell.size, cell);
+    		if (cell.size)
+    		{
+    			let keys = cell.keys();
+    			// console.log(keys);
+    			let biggest_key = Math.max(...keys);
+    			// console.log(keys, biggest_key);
+				// for( let k = 0; k < cell.length; k++ ){
+				//     // sum += parseInt(cell[k], 16);
+				//     sum_r += cell[k].r;
+				//     sum_g += cell[k].g;
+				//     sum_b += cell[k].b;
+				//     // sum_a += cell[k].a;
+				// }
+
+				// let avg_r = sum_r / cell.length;
+				// let avg_g = sum_g / cell.length;
+				// let avg_b = sum_b / cell.length;
+				// // avg = cell.length;
+				let target_color = cell.get(biggest_key);
+				target_color.r = Math.round(target_color.r);
+				target_color.g = Math.round(target_color.g);
+				target_color.b = Math.round(target_color.b);
+	    		planet.visual_matrix[i][j] = target_color;
 	    	}
 	    	else
 	    	{
